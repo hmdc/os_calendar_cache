@@ -1,2 +1,2 @@
-# os_calendar_cache
+# OS Calendar Cache
 Caches OpenScholar calendar feeds.
