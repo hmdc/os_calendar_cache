@@ -8,12 +8,12 @@ import datetime
 import dateutil.parser
 import filecmp
 import hashlib
+import os
 import pytz
 import re
 import shutil
 import sys
 import time
-import os
 import urllib2
 
 __author__ = "Harvard-MIT Data Center DevOps"
