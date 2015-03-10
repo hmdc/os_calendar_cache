@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from hmdclogger import HMDCLogger
 from icalendar import Calendar
 from lxml import etree
 import ConfigParser
@@ -8,6 +7,7 @@ import datetime
 import dateutil.parser
 import filecmp
 import hashlib
+import hmdclogger
 import os
 import pytz
 import re
@@ -29,7 +29,7 @@ class OSCalendarCache:
   """Module for caching and parsing OpenScholar calendar feeds.
 
   Example:
-    cacher = OSCalendarCache()
+    cacher = os_calendar_cache.OSCalendarCache()
     cacher.get_updates()
 
   Public Functions:
