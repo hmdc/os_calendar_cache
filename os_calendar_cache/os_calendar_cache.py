@@ -373,5 +373,4 @@ class OSCalendarCache:
 
 
 if __name__ == '__main__':
-  cacher = OSCalendarCache(True, True)
-  cacher.get_updates()
+  pass
