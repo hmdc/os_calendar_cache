@@ -79,7 +79,7 @@ class OSCalendarCache:
       'working_directory': config.get('WorkingFiles', 'working_directory'),
     }
 
-    self.hmdclog = HMDCLogger(config_name, self.settings['debug_level'])
+    self.hmdclog = hmdclogger.HMDCLogger(config_name, self.settings['debug_level'])
     if log_to_console:
         self.hmdclog.log_to_console()
     if log_to_file:
