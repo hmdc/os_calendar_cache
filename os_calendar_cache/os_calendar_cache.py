@@ -73,7 +73,6 @@ class OSCalendarCache:
       'feed_url': config.get('Sources', 'feed_url'),
       'website_url': config.get('Sources', 'website_url'),
       # WorkingFiles
-      'cache': config.get('WorkingFiles', 'cache'),
       'notifications': config.get('WorkingFiles', 'notifications'),
       'preserve_versions': config.getboolean('WorkingFiles', 'preserve_versions'),
       'working_directory': config.get('WorkingFiles', 'working_directory'),
@@ -134,12 +133,11 @@ class OSCalendarCache:
       with open(cache, "wb") as file:
           file.write(feed.read())
       file.closed
-      self.hmdclog.log('info', "Successfully downloaded the ICAL feed.")
-      self.hmdclog.log('debug', "Wrote: " + cache)
+      self.hmdclog.log('debug', "Successfully wrote: " + cache)
     except urllib2.HTTPError, e:
-      print("HTTP Error:", e.code, feed)
+      raise Exception("HTTP Error:", e.code, feed)
     except urllib2.URLError, e:
-      print("URL Error:", e.reason, feed)
+      raise Exception("URL Error:", e.reason, feed)
 
     #
     # Parse the cache file, which strips out only the outage related
