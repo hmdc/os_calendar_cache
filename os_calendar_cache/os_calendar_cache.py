@@ -84,13 +84,14 @@ class OSCalendarCache:
       self.hmdclog.log_to_file(self.settings['log_file'])
     else:
       self.hmdclog = hmdclogger.HMDCLogger(config_name, debug_level)
+
       # There must be at least one handler.
       if log_to_console is False and log_to_file is False:
-        logging.exception("You must set a logging handler (console or file).")
-      # Log to console.
+        raise Exception("You must set a logging handler (console or file).")
+
+      # Log to console and/or file.
       if log_to_console:
         self.hmdclog.log_to_console()
-      # Log to a file.
       if log_to_file:
         self.hmdclog.log_to_file(self.settings['log_file'])
 
@@ -153,10 +154,10 @@ class OSCalendarCache:
     # no notify feed yet, force an update.
     #
     if os.path.isfile(notifications):
-      self.hmdclog.log('info', "Comparing temp and notify feed.")
+      self.hmdclog.log('debug', "Comparing temp and notify feed.")
       feed_updated = not filecmp.cmp(temp, notifications)
     else:
-      self.hmdclog.log('info', "No notify feed found; forcing update.")
+      self.hmdclog.log('debug', "No notify feed found; forcing update.")
       feed_updated = True
 
     #
@@ -164,9 +165,9 @@ class OSCalendarCache:
     # Otherwise, scrap the temp file.
     #
     if feed_updated:
-      self.hmdclog.log('info', "Updates to the outages feed were found!")
+      self.hmdclog.log('info', "Updates to the outages feed were found.")
       shutil.move(temp, notifications)
-      self.hmdclog.log('info', "Temp file converted to new notify feed.")
+      self.hmdclog.log('debug', "Temp file converted to new notify feed.")
     else:
       self.hmdclog.log('info', "No updates were found.")
       if preserve is False:
