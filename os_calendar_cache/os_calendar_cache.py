@@ -50,9 +50,9 @@ class OSCalendarCache:
     """Parses the conf file for self.settings, and sets up a logging instance.
 
     Arguments:
-      debug_level (string):
-      log_to_console (boolean):
-      log_to_file (boolean):
+      debug_level (string): Optionally override the debugging level.
+      log_to_console (boolean): Optionally log to console.
+      log_to_file (boolean): Optionally log to a file (defined in CONFIG_FILE).
 
     Attributes:
       config (instance): Instance of ConfigParser().
@@ -81,12 +81,18 @@ class OSCalendarCache:
 
     if debug_level is None:
       self.hmdclog = hmdclogger.HMDCLogger(config_name, self.settings['debug_level'])
+      self.hmdclog.log_to_file(self.settings['log_file'])
     else:
       self.hmdclog = hmdclogger.HMDCLogger(config_name, debug_level)
+      # There must be at least one handler.
+      if log_to_console is False and log_to_file is False:
+        logging.exception("You must set a logging handler (console or file).")
+      # Log to console.
       if log_to_console:
-          self.hmdclog.log_to_console()
+        self.hmdclog.log_to_console()
+      # Log to a file.
       if log_to_file:
-          self.hmdclog.log_to_file(self.settings['log_file'])
+        self.hmdclog.log_to_file(self.settings['log_file'])
 
   def get_updates(self):
     """Detect updates by parsing a cached ICAL feed to a temp file and
