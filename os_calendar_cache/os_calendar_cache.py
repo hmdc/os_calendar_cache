@@ -46,7 +46,7 @@ class OSCalendarCache:
 
   CONFIG_FILE = "/etc/os_calendar_cache.conf"
 
-  def __init__(self, log_to_console=False, log_to_file=False):
+  def __init__(self, debug="NOTSET", log_to_console=False, log_to_file=False):
     """Parses the conf file for self.settings, and sets up a logging instance.
 
     Arguments:
@@ -73,7 +73,7 @@ class OSCalendarCache:
       # WorkingFiles
       'cache': config.get('WorkingFiles', 'cache'),
       'notifications': config.get('WorkingFiles', 'notifications'),
-      'preserve_versions': config.get('WorkingFiles', 'preserve_versions'),
+      'preserve_versions': config.getboolean('WorkingFiles', 'preserve_versions'),
       'working_directory': config.get('WorkingFiles', 'working_directory'),
     }
 
@@ -94,6 +94,7 @@ class OSCalendarCache:
       feed (object): File handler of the feed.
       notifications (string): Full path to the outages file.
       outages (dictionary): Results from parsing the calendar feed.
+      preserve (boolean): If true, saves previous cache files.
       temp (string): Full path to the temp file.
     """
 
@@ -105,11 +106,13 @@ class OSCalendarCache:
     cache = directory + "/outages-" + date + ".ics"
     temp = directory + "/outages-" + date + ".xml"
     notifications = directory + "/" + self.settings["notifications"]
+    preserve = self.settings['preserve_versions']
 
     self.hmdclog.log('debug', "Cache file: " + cache)
     self.hmdclog.log('debug', "Temp file: " + temp)
     self.hmdclog.log('debug', "Notify feed: " + notifications)
     self.hmdclog.log('debug', "Calendar feed: " + self.settings['feed_url'])
+    self.hmdclog.log('debug', "Preserve cache: " + str(preserve))
 
     #
     # Download a new copy of the calendar feed into a cache file.
@@ -155,7 +158,7 @@ class OSCalendarCache:
       self.hmdclog.log('info', "Temp file converted to new notify feed.")
     else:
       self.hmdclog.log('info', "No updates were found.")
-      if self.settings['preserve_versions'] is False:
+      if preserve is False:
         try:
           os.remove(temp)
         except OSError, e:
@@ -167,7 +170,7 @@ class OSCalendarCache:
     #
     # Delete the cache file.
     #
-    if self.settings['preserve_versions'] is False:
+    if preserve is False:
       try:
         os.remove(cache)
       except OSError, e:
