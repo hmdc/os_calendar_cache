@@ -46,15 +46,17 @@ class OSCalendarCache:
 
   CONFIG_FILE = "/etc/os_calendar_cache.conf"
 
-  def __init__(self, debug="NOTSET", log_to_console=False, log_to_file=False):
+  def __init__(self, debug_level=None, log_to_console=False, log_to_file=False):
     """Parses the conf file for self.settings, and sets up a logging instance.
 
     Arguments:
-      logger (instance): A previously instantiated HMDCLogger instance.
+      debug_level (string):
+      log_to_console (boolean):
+      log_to_file (boolean):
 
     Attributes:
       config (instance): Instance of ConfigParser().
-      self.hmdclog (instance): Instance of HMDCLogger for logging.
+      hmdclog (instance): Instance of HMDCLogger for logging.
     """
 
     config_name = self.__class__.__name__
@@ -77,11 +79,14 @@ class OSCalendarCache:
       'working_directory': config.get('WorkingFiles', 'working_directory'),
     }
 
-    self.hmdclog = hmdclogger.HMDCLogger(config_name, self.settings['debug_level'])
-    if log_to_console:
-        self.hmdclog.log_to_console()
-    if log_to_file:
-        self.hmdclog.log_to_file(self.settings['log_file'])
+    if debug_level is None:
+      self.hmdclog = hmdclogger.HMDCLogger(config_name, self.settings['debug_level'])
+    else:
+      self.hmdclog = hmdclogger.HMDCLogger(config_name, debug_level)
+      if log_to_console:
+          self.hmdclog.log_to_console()
+      if log_to_file:
+          self.hmdclog.log_to_file(self.settings['log_file'])
 
   def get_updates(self):
     """Detect updates by parsing a cached ICAL feed to a temp file and
