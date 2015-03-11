@@ -67,8 +67,6 @@ class OSCalendarCache:
       'log_file': config.get('Debugging', 'log_file'),
       # Parsing
       'resolved_pattern': config.get('Parsing', 'resolved_pattern'),
-      'scope_ahead': config.getint('Parsing', 'scope_ahead'),
-      'scope_past': config.getint('Parsing', 'scope_past'),
       # Sources
       'feed_url': config.get('Sources', 'feed_url'),
       'website_url': config.get('Sources', 'website_url'),
