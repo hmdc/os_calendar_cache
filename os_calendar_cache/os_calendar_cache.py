@@ -362,7 +362,7 @@ class OSCalendarCache:
     # Otherwise, delete the temp file.
     #
     if feed_updated:
-      self.hmdclog.log('info', "Updates to the outages feed were found.")
+      self.hmdclog.log('debug', "Updates to the outages feed were found.")
       shutil.move(temp_file, parsed_file)
       self.hmdclog.log('debug', "Temp file converted to new parsed file.")
       #
