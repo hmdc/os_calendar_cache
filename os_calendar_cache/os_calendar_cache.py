@@ -494,8 +494,8 @@ class OSCalendarCache:
       counter += 1
       self.hmdclog.log('debug', "Adding message #" + str(counter) + ".")
 
-      item = etree.SubElement(messages, "item")
-      item.text = outage.encode("unicode_escape")
+      message = etree.SubElement(messages, "message")
+      message.text = outage.encode("unicode_escape")
 
     counter = 0
     widgets = etree.SubElement(root, "widgets")
@@ -503,18 +503,18 @@ class OSCalendarCache:
       counter += 1
       self.hmdclog.log('debug', "Adding widget #" + str(counter) + ".")
 
-      item = etree.SubElement(widgets, "item")
+      widget = etree.SubElement(widgets, "widget")
 
-      title = etree.SubElement(item, "title")
+      title = etree.SubElement(widget, "title")
       title.text = outage["title"]
 
-      icon = etree.SubElement(item, "icon")
+      icon = etree.SubElement(widget, "icon")
       icon.text = outage["icon"]
 
-      timeout = etree.SubElement(item, "timeout")
+      timeout = etree.SubElement(widget, "timeout")
       timeout.text = str(outage["timeout"])
 
-      urgency = etree.SubElement(item, "urgency")
+      urgency = etree.SubElement(widget, "urgency")
       urgency.text = outage["urgency"]
 
     with open(output_file, 'w') as file:
@@ -803,5 +803,4 @@ class OSCalendarCache:
       return False
 
 if __name__ == '__main__':
-  cacher = OSCalendarCache("DEBUG", True, False)
-  cacher.get_updates()
+  pass
