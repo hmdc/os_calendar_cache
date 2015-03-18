@@ -29,6 +29,7 @@ class OSCalendarCache:
   """Module for caching and parsing OpenScholar calendar feeds.
 
   Example:
+    import os_calendar_cache
     cacher = os_calendar_cache.OSCalendarCache()
     cacher.get_updates()
 
@@ -37,14 +38,17 @@ class OSCalendarCache:
     _set_logger: Creates a logger.
 
   Public Functions:
-    create_notifications:
-    format_date:
+    cache_feed: Downloads and caches the calendar ICAL feed.
+    create_notifications: Builds console and widget output from outage data.
+    format_date: Converts unix timestamp to human readable format.
     get_updates: Checks the calendar for updates and outputs notifications feed.
     is_resolved: Searches outage description for the resolved string.
     iso_to_unixtime: Converts ISO8601 datetime to a unix timestamp.
-    parse_ical: Searches the ICAL feed to parse events.
-    sort_outages:
+    notifications_to_xml: Writes console and widget output to an XML file.
     outages_to_xml: Writes a set of data to a file in XML format.
+    parse_ical: Searches the ICAL feed to parse events.
+    sort_outages: Sorts outages into one of three categories based on status.
+    within_grace_period: Allows ICAL download to fail within a grace period.
 
   Class Variables:
     CONFIG_FILE (string): Location of conf file to import self.settings.
@@ -124,44 +128,16 @@ class OSCalendarCache:
 
     return hmdclog
 
-  def _within_grace_period(self, cache_file, timeout):
-    """
+  def cache_feed(self, cache_file, feed_url, within_grace_period):
+    """Downloads and caches the calendar ICAL feed.
 
     Parameters:
+      cache_file (string): Full path to the cache file to save to.
+      feed_url (string): URL of the OpenScholar ICAL feed.
+      within_grace_period (boolean): If still within the grace period for no
+        OpenScholar connectivity.
 
     Attributes:
-
-    """
-
-    if not os.path.isfile(cache_file):
-      return True
-
-    cache_mtime = int(os.path.getmtime(cache_file))
-    now = int(time.time())
-    threshold = cache_mtime + timeout
-
-    now_formatted = self.format_date(now, "now")
-    cache_mtime_formatted = self.format_date(cache_mtime, "cache_mtime")
-    threshold_formatted = self.format_date(threshold, "threshold")
-
-    self.hmdclog.log('debug', "Now: " + now_formatted)
-    self.hmdclog.log('debug', "Last check time: " + cache_mtime_formatted)
-    self.hmdclog.log('debug', "Grace period: " + str(timeout) + " seconds")
-    self.hmdclog.log('debug', "Threshold: " + threshold_formatted)
-
-    if threshold > now:
-      return True
-    else:
-      return False
-
-  def cache_feed(self, feed_url, cache_file, within_grace_period):
-    """
-
-    Parameters:
-
-    Attributes:
-      connection_msg (string):
-      timeout_msg (string):
       feed (object): File handler of the calendar feed.
     """
 
@@ -174,6 +150,10 @@ class OSCalendarCache:
         file.write(feed.read())
       file.close()
       self.hmdclog.log('debug', "Successfully wrote: " + cache_file)
+    #
+    # There was an error connecting or download the feed, catch it here but
+    # only if it's past the grace period.
+    #
     except urllib2.HTTPError, e:
       if not within_grace_period:
         self.hmdclog.log('error', connection_msg)
@@ -192,8 +172,7 @@ class OSCalendarCache:
     return True
 
   def create_notifications(self, sorted_outages):
-    """Returns GUI and console output sorted into groups of "completed",
-       "active", and "scheduled".
+    """Creates notification output for console and widgets based on status.
 
     Arguments:
       sorted_outages (dictionary): Outages sorted into groups.
@@ -361,15 +340,16 @@ class OSCalendarCache:
 
     Attributes:
       cache_file (string): Full path to the cache_file file.
-      cached (boolean):
+      cached (boolean): If caching calendar feed succeeded or not.
       directory (string): Location of the working directory.
       feed (object): File handler of the calendar feed.
       feed_updated (boolean): Whether the feed has been updated or not.
-      parsed_file (string): Full path to the XML file of the parsed ICAL feed.
+      parsed_file (string): Full path to the XML file of the parsed feed.
       outages (dictionary): Results from parsing the calendar feed.
       notifications_file (string): Full path to the notifications file.
-      temp_file (string): Full path to the temp_file XML file of the parsed ICAL feed.
-      within_grace_period (boolean):
+      temp_file (string): Full path to the temp XML file of the parsed feed.
+      within_grace_period (boolean): If still within the grace period for no
+        OpenScholar connectivity.
     """
 
     #
@@ -392,13 +372,13 @@ class OSCalendarCache:
     # Determines if the last cache file was downloaded within the grace
     # period by comparing the timeout setting to the cache file's mtime.
     #
-    within_grace_period = self._within_grace_period(cache_file, self.settings['url_timeout'])
+    within_grace_period = self.within_grace_period(cache_file, self.settings['url_timeout'])
     self.hmdclog.log('debug', "Within grace period: " + str(within_grace_period))
 
     #
     # Download a new copy of the calendar feed into a cache file.
     #
-    cached = self.cache_feed(self.settings["feed_url"], cache_file, within_grace_period)
+    cached = self.cache_feed(cache_file, self.settings["feed_url"], within_grace_period)
 
     if cached:
       #
@@ -674,21 +654,14 @@ class OSCalendarCache:
     return outages
 
   def sort_outages(self, outages):
-    """Sorts outages into one of three categories based on status.
+    """Sorts outages into groups of "completed", "active", and "scheduled".
 
     Parameters:
-      outages (dictionary): A list of outages from the ICAL feed.
+      outages (dictionary): A list of outages from the calendar feed.
 
     Attributes:
       counter (int): Counts interations for debugging text.
-      has_ended (boolean):
-      has_end_time (boolean):
-      has_started (boolean):
       now (int): Current date and time as a unix timestamp.
-      seconds_until_end (int):
-      seconds_until_start (int):
-      within_future_scope (boolean):
-      within_past_scope (boolean):
 
     Returns:
       sorted_outages (dictionary): Outages sorted into buckets of
@@ -792,6 +765,42 @@ class OSCalendarCache:
       self.hmdclog.log('debug', "Done sorting outage #" + str(counter) + ".")
 
     return sorted_outages
+
+  def within_grace_period(self, cache_file, timeout):
+    """Makes the cacher resilient to OpenScholar outages by allowing for
+    connections to fail for a specified amount of time before throwing an error.
+    Uses the mtime of the cache file as the checking mechanism.
+
+    Parameters:
+      cache_file (string): Full path to the cache file.
+      timeout (int): The grace period allowed, in seconds.
+
+    Attributes:
+      cache_mtime (int): Last modified time of the cache file.
+      now (int): Current date and time.
+      threshold (int): Demarkation time for being under/over the grace period.
+    """
+
+    if not os.path.isfile(cache_file):
+      return True
+
+    cache_mtime = int(os.path.getmtime(cache_file))
+    now = int(time.time())
+    threshold = cache_mtime + timeout
+
+    now_formatted = self.format_date(now, "now")
+    cache_mtime_formatted = self.format_date(cache_mtime, "cache_mtime")
+    threshold_formatted = self.format_date(threshold, "threshold")
+
+    self.hmdclog.log('debug', "Now: " + now_formatted)
+    self.hmdclog.log('debug', "Last check time: " + cache_mtime_formatted)
+    self.hmdclog.log('debug', "Grace period: " + str(timeout) + " seconds")
+    self.hmdclog.log('debug', "Threshold: " + threshold_formatted)
+
+    if threshold > now:
+      return True
+    else:
+      return False
 
 if __name__ == '__main__':
   cacher = OSCalendarCache("DEBUG", True, False)
