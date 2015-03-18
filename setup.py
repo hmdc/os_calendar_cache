@@ -27,5 +27,5 @@ setup(author='Bradley Frank',
            'urllib2'],
       scripts=['scripts/cache_outages_feed.py'],
       url='https://github.com/hmdc/os_calendar_cache',
-      version='1.5',
+      version='1.6',
 )

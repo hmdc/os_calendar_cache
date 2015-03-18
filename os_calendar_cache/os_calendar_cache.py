@@ -85,9 +85,9 @@ class OSCalendarCache:
       'states': {},
       # Sources
       'feed_url': config.get('Sources', 'feed_url'),
+      'url_timeout': config.getint('Sources', 'url_timeout'),
       'website_url': config.get('Sources', 'website_url'),
       # WorkingFiles
-      'preserve_versions': config.getboolean('WorkingFiles', 'preserve_versions'),
       'working_directory': config.get('WorkingFiles', 'working_directory'),
     }
 
@@ -123,6 +123,73 @@ class OSCalendarCache:
         hmdclog.log_to_file(self.settings['log_file'])
 
     return hmdclog
+
+  def _within_grace_period(self, cache_file, timeout):
+    """
+
+    Parameters:
+
+    Attributes:
+
+    """
+
+    if not os.path.isfile(cache_file):
+      return True
+
+    cache_mtime = int(os.path.getmtime(cache_file))
+    now = int(time.time())
+    threshold = cache_mtime + timeout
+
+    now_formatted = self.format_date(now, "now")
+    cache_mtime_formatted = self.format_date(cache_mtime, "cache_mtime")
+    threshold_formatted = self.format_date(threshold, "threshold")
+
+    self.hmdclog.log('debug', "Now: " + now_formatted)
+    self.hmdclog.log('debug', "Last check time: " + cache_mtime_formatted)
+    self.hmdclog.log('debug', "Grace period: " + str(timeout) + " seconds")
+    self.hmdclog.log('debug', "Threshold: " + threshold_formatted)
+
+    if threshold > now:
+      return True
+    else:
+      return False
+
+  def cache_feed(self, feed_url, cache_file, within_grace_period):
+    """
+
+    Parameters:
+
+    Attributes:
+      connection_msg (string):
+      timeout_msg (string):
+      feed (object): File handler of the calendar feed.
+    """
+
+    connection_msg = "Unable to connect to OpenScholar: " + feed_url
+    timeout_msg = "Cannot download " + feed_url + ", but within grace period."
+
+    try:
+      feed = urllib2.urlopen(feed_url)
+      with open(cache_file, "wb") as file:
+        file.write(feed.read())
+      file.close()
+      self.hmdclog.log('debug', "Successfully wrote: " + cache_file)
+    except urllib2.HTTPError, e:
+      if not within_grace_period:
+        self.hmdclog.log('error', connection_msg)
+        raise Exception(connection_msg)
+      else:
+        self.hmdclog.log('warning', timeout_msg)
+        return False
+    except urllib2.URLError, e:
+      if not within_grace_period:
+        self.hmdclog.log('error', connection_msg)
+        raise Exception(connection_msg)
+      else:
+        self.hmdclog.log('warning', timeout_msg)
+        return False
+
+    return True
 
   def create_notifications(self, sorted_outages):
     """Returns GUI and console output sorted into groups of "completed",
@@ -294,31 +361,27 @@ class OSCalendarCache:
 
     Attributes:
       cache_file (string): Full path to the cache_file file.
-      date (string): Current date and time for cache_file filename.
+      cached (boolean):
       directory (string): Location of the working directory.
       feed (object): File handler of the calendar feed.
       feed_updated (boolean): Whether the feed has been updated or not.
       parsed_file (string): Full path to the XML file of the parsed ICAL feed.
       outages (dictionary): Results from parsing the calendar feed.
       notifications_file (string): Full path to the notifications file.
-      preserve (boolean): If true, saves all cache and temp file versions.
       temp_file (string): Full path to the temp_file XML file of the parsed ICAL feed.
+      within_grace_period (boolean):
     """
-
-    preserve = self.settings['preserve_versions']
 
     #
     # Set up file locations for sources and outputs.
     #
     directory = self.settings["working_directory"]
-    date = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    cache_file = directory + "/ical-" + date + ".ics"
+    cache_file = directory + "/ical-feed.ics"
     notifications_file = directory + "/notifications.xml"
-    parsed_file = directory + "/ical-feed.xml"
-    temp_file = directory + "/ical-" + date + ".xml"
+    parsed_file = directory + "/ical-parsed.xml"
+    temp_file = directory + "/ical-parsed-temp.xml"
 
     self.hmdclog.log('debug', "Calendar feed: " + self.settings['feed_url'])
-    self.hmdclog.log('debug', "Preserve cache file: " + str(preserve))
     self.hmdclog.log('debug', "Files:")
     self.hmdclog.log('debug', "\tCache: " + cache_file)
     self.hmdclog.log('debug', "\tTemp: " + temp_file)
@@ -326,36 +389,41 @@ class OSCalendarCache:
     self.hmdclog.log('debug', "\tNotifications: " + notifications_file)
 
     #
+    # Determines if the last cache file was downloaded within the grace
+    # period by comparing the timeout setting to the cache file's mtime.
+    #
+    within_grace_period = self._within_grace_period(cache_file, self.settings['url_timeout'])
+    self.hmdclog.log('debug', "Within grace period: " + str(within_grace_period))
+
+    #
     # Download a new copy of the calendar feed into a cache file.
     #
-    try:
-      feed = urllib2.urlopen(self.settings["feed_url"])
-      with open(cache_file, "wb") as file:
-        file.write(feed.read())
-      file.closed
-      self.hmdclog.log('debug', "Successfully wrote: " + cache_file)
-    except urllib2.HTTPError, e:
-      raise Exception("HTTP Error:", e.code, feed)
-    except urllib2.URLError, e:
-      raise Exception("URL Error:", e.reason, feed)
+    cached = self.cache_feed(self.settings["feed_url"], cache_file, within_grace_period)
 
-    #
-    # Parse the cache file, which strips out only the outage related
-    # information, then save that information to a temp file.
-    #
-    outages = self.parse_ical(cache_file)
-    self.outages_to_xml(outages, temp_file)
-
-    #
-    # Compare the temp file to an existing parsed xml file in order to
-    # determine if anything has changed. If it does not exist, force an update.
-    #
-    if not os.path.isfile(notifications_file):
-      self.hmdclog.log('debug', "No notifications found; forcing update.")
-      feed_updated = True
+    if cached:
+      #
+      # If caching was successful, parse the cache file into a new temporary
+      # XML file, which pulls out only the outage related information.
+      #
+      outages = self.parse_ical(cache_file)
+      self.outages_to_xml(outages, temp_file)
+      #
+      # If notifications have not been created previously, force an update;
+      # if a parsed XML file doesn't exist for any reason, force an update;
+      # otherwise compare the temp XML file to the previous parsed XML file to
+      # determine if there are any updates.
+      #
+      if not os.path.isfile(notifications_file):
+        self.hmdclog.log('debug', "No notifications found; forcing update.")
+        feed_updated = True
+      elif not os.path.isfile(parsed_file):
+        self.hmdclog.log('debug', "No previous parsed file to check against; forcing update.")
+        feed_updated = True
+      else:
+        self.hmdclog.log('debug', "Comparing temp file and parsed file.")
+        feed_updated = not filecmp.cmp(temp_file, parsed_file)
     else:
-      self.hmdclog.log('debug', "Comparing temp file and parsed file.")
-      feed_updated = not filecmp.cmp(temp_file, parsed_file)
+      feed_updated = False
 
     #
     # If updates were found, make the temp file the new parsed file.
@@ -374,26 +442,12 @@ class OSCalendarCache:
       self.notifications_to_xml(notifications, notifications_file)
     else:
       self.hmdclog.log('info', "No updates were found.")
-      if preserve is False:
+      if os.path.isfile(temp_file):
         try:
           os.remove(temp_file)
-          self.hmdclog.log('debug', "Deleted the temp file.")
+          self.hmdclog.log('debug', "Deleted " + temp_file)
         except OSError, e:
-          self.hmdclog.log('error', "Error deleting %s: %s." % (e.filename, e.strerror))
-      else:
-        self.hmdclog.log('debug', "Temp file was preserved.")
-
-    #
-    # Delete the cache file.
-    #
-    if preserve is False:
-      try:
-        os.remove(cache_file)
-        self.hmdclog.log('debug', "Deleted the cache file.")
-      except OSError, e:
-        self.hmdclog.log('error', "Error deleting %s: %s." % (e.filename, e.strerror))
-    else:
-      self.hmdclog.log('debug', "Cache file was preserved.")
+          self.hmdclog.log('error', "Error deleting " + temp_file)
 
   def is_resolved(self, description):
     """Attempts to find the resolved string with regex.
