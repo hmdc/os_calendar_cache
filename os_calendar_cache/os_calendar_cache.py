@@ -182,9 +182,9 @@ class OSCalendarCache:
       gui_text (string): Link header text for displaying to the widget.
       icon (string): Icon to use with associated outage status.
       link_color (string): Shared text color for URLs.
-      message (string): Formatted text to display on the widget or console.
       timeout (int): Time to keep the widget displayed (milliseconds).
       title (string): Name of the outage.
+      tooltip (string): Formatted text to display on the widget or console.
       urgency (string): Urgency level used by NOTIFY_SEND.
 
     Returns:
@@ -213,11 +213,11 @@ class OSCalendarCache:
 
       # GUI output
       icon = self.settings['states']['completed']['icon']
-      message = complete_text + "\n" + gui_text
+      tooltip = complete_text + "\n" + gui_text
       timeout = self.settings['states']['completed']['timeout']
       urgency = self.settings['states']['completed']['urgency']
 
-      output['gui'].append({'icon': icon, 'message': message, 'timeout': timeout,
+      output['gui'].append({'icon': icon, 'tooltip': tooltip, 'timeout': timeout,
                   'title': title, 'urgency': urgency})
 
       self.hmdclog.log('debug', "GUI settings:")
@@ -229,8 +229,8 @@ class OSCalendarCache:
       # Console output
       link = colored(completed['link'], link_color)
       text = colored(complete_text, 'yellow', attrs=['bold'])
-      message = text + "\n" + cli_text + "\n\t" + link + "\n"
-      output['console'].append(message)
+      tooltip = text + "\n" + cli_text + "\n\t" + link + "\n"
+      output['console'].append(tooltip)
 
       self.hmdclog.log('debug', "Console output:")
       self.hmdclog.log('debug', "\tText: " + str(complete_text))
@@ -252,11 +252,11 @@ class OSCalendarCache:
 
       # GUI output
       icon = self.settings['states']['scheduled']['icon']
-      message = scheduled_text + "\n" + scheduled['link'] + "\n" + gui_text
+      tooltip = scheduled_text + "\n" + scheduled['link'] + "\n" + gui_text
       timeout = self.settings['states']['scheduled']['timeout']
       urgency = self.settings['states']['scheduled']['urgency']
 
-      output['gui'].append({'icon': icon, 'message': message, 'timeout': timeout,
+      output['gui'].append({'icon': icon, 'tooltip': tooltip, 'timeout': timeout,
                   'title': title, 'urgency': urgency})
 
       self.hmdclog.log('debug', "GUI settings:")
@@ -269,8 +269,8 @@ class OSCalendarCache:
       link = colored(scheduled['link'], link_color)
       text = colored(scheduled['title'], attrs=['bold']) + \
         " is scheduled to start on " + colored(start_time, 'green') + "."
-      message = text + "\n" + cli_text + "\n\t" + link + "\n"
-      output['console'].append(message)
+      tooltip = text + "\n" + cli_text + "\n\t" + link + "\n"
+      output['console'].append(tooltip)
 
       self.hmdclog.log('debug', "Console output:")
       self.hmdclog.log('debug', "\tText: " + str(scheduled_text))
@@ -299,9 +299,9 @@ class OSCalendarCache:
       icon = self.settings['states']['active']['icon']
       timeout = self.settings['states']['active']['timeout']
       urgency = self.settings['states']['active']['urgency']
-      message = active_text + "." + "\n" + gui_text
+      tooltip = active_text + "." + "\n" + gui_text
 
-      output['gui'].append({'icon': icon, 'message': message, 'timeout': timeout,
+      output['gui'].append({'icon': icon, 'tooltip': tooltip, 'timeout': timeout,
                   'title': title, 'urgency': urgency})
 
       self.hmdclog.log('debug', "GUI settings:")
@@ -314,8 +314,8 @@ class OSCalendarCache:
       link = colored(active['link'], link_color)
       text = colored(active['title'], attrs=['bold']) + \
         colored(" is in progress" + end_time + ".", 'red', attrs=['bold'])
-      message = text + "\n" + cli_text + "\n\t" + link + "\n"
-      output['console'].append(message)
+      tooltip = text + "\n" + cli_text + "\n\t" + link + "\n"
+      output['console'].append(tooltip)
 
       self.hmdclog.log('debug', "Console output:")
       self.hmdclog.log('debug', "\tText: " + str(active_text))
@@ -510,8 +510,8 @@ class OSCalendarCache:
       icon = etree.SubElement(widget, 'icon')
       icon.text = outage['icon']
 
-      message = etree.SubElement(widget, 'message')
-      message.text = outage['message']
+      tooltip = etree.SubElement(widget, 'tooltip')
+      tooltip.text = outage['tooltip']
 
       timeout = etree.SubElement(widget, 'timeout')
       timeout.text = str(outage['timeout'])
