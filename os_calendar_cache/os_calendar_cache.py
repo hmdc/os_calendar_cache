@@ -146,7 +146,7 @@ class OSCalendarCache:
 
     try:
       feed = urllib2.urlopen(feed_url)
-      with open(cache_file, "wb") as file:
+      with open(cache_file, 'wb') as file:
         file.write(feed.read())
       self.hmdclog.log('debug', "Successfully wrote: " + cache_file)
     #
@@ -354,7 +354,7 @@ class OSCalendarCache:
     #
     # Set up file locations for sources and outputs.
     #
-    directory = self.settings["working_directory"]
+    directory = self.settings['working_directory']
     cache_file = directory + "/ical-feed.ics"
     notifications_file = directory + "/notifications.xml"
     parsed_file = directory + "/ical-parsed.xml"
@@ -377,7 +377,7 @@ class OSCalendarCache:
     #
     # Download a new copy of the calendar feed into a cache file.
     #
-    cached = self.cache_feed(cache_file, self.settings["feed_url"], within_grace_period)
+    cached = self.cache_feed(cache_file, self.settings['feed_url'], within_grace_period)
 
     if cached:
       #
@@ -442,7 +442,7 @@ class OSCalendarCache:
         matched (boolean): If the resolved string is present.
     """
 
-    resolved_regex = "(.*)(" + self.settings["resolved_pattern"] + ")(.*)"
+    resolved_regex = "(.*)(" + self.settings['resolved_pattern'] + ")(.*)"
     self.hmdclog.log('debug', "Resolved regex: " + resolved_regex)
 
     regex = re.compile(resolved_regex, re.MULTILINE)
@@ -483,21 +483,21 @@ class OSCalendarCache:
         tree (object): Wrapper to save elements in XML format.
     """
 
-    root = etree.Element("notifications")
+    root = etree.Element('notifications')
     tree = etree.ElementTree(root)
     self.hmdclog.log('debug', "")
 
     counter = 0
-    messages = etree.SubElement(root, "messages")
+    messages = etree.SubElement(root, 'messages')
     for outage in notifications['console']:
       counter += 1
       self.hmdclog.log('debug', "Adding message #" + str(counter) + ".")
 
-      message = etree.SubElement(messages, "message")
-      message.text = outage.encode("unicode_escape")
+      message = etree.SubElement(messages, 'message')
+      message.text = outage.encode('unicode_escape')
 
     counter = 0
-    widgets = etree.SubElement(root, "widgets")
+    widgets = etree.SubElement(root, 'widgets')
     for outage in notifications['gui']:
       counter += 1
       self.hmdclog.log('debug', "Adding widget #" + str(counter) + ".")
@@ -540,7 +540,7 @@ class OSCalendarCache:
 
     counter = 0
     self.hmdclog.log('debug', "")
-    root = etree.Element("events")
+    root = etree.Element('events')
     tree = etree.ElementTree(root)
 
     for outage in outages:
@@ -597,7 +597,7 @@ class OSCalendarCache:
     outages = []
 
     if os.path.isfile(source):
-      with open(source, "rb") as file:
+      with open(source, 'rb') as file:
         ical_feed = Calendar.from_ical(file.read())
       self.hmdclog.log('debug', "Read in file: " + source)
     else:
@@ -668,7 +668,7 @@ class OSCalendarCache:
     """
 
     counter = 0
-    sorted_outages = {"completed": [], "scheduled": [], "active": []}
+    sorted_outages = {'completed': [], 'scheduled': [], 'active': []}
     now = int(time.time())
 
     #
@@ -683,8 +683,8 @@ class OSCalendarCache:
       #
       # Calculates how many seconds until the start and end time.
       #
-      seconds_until_start = outage["start_time"] - now
-      seconds_until_end = outage["end_time"] - now
+      seconds_until_start = outage['start_time'] - now
+      seconds_until_end = outage['end_time'] - now
       self.hmdclog.log('debug', "seconds until start: " + str(seconds_until_start))
       self.hmdclog.log('debug', "seconds until end: " + str(seconds_until_end))
 
@@ -699,7 +699,7 @@ class OSCalendarCache:
       #
       # Some outages may not have a defined end time.
       #
-      has_end_time = outage["end_time"] != 0
+      has_end_time = outage['end_time'] != 0
       self.hmdclog.log('debug', "has end time: " + str(has_end_time))
 
       #
@@ -729,7 +729,7 @@ class OSCalendarCache:
       #   o is not resolved yet
       #
       if (has_started and (not has_ended or not has_end_time)) and not resolved:
-        sorted_outages["active"].append(outage)
+        sorted_outages['active'].append(outage)
         self.hmdclog.log('debug', "Added outage to \"active\" queue.")
 
       #
@@ -742,7 +742,7 @@ class OSCalendarCache:
       # display once they are marked "resolved" in the calendar.
       #
       elif ((has_started and has_ended) or resolved) and within_past_scope:
-        sorted_outages["completed"].append(outage)
+        sorted_outages['completed'].append(outage)
         self.hmdclog.log('debug', "Added outage to \"completed\" queue.")
 
       #
@@ -752,7 +752,7 @@ class OSCalendarCache:
       # ...but only display the outage if it falls in the scope.
       #
       elif (not has_started and not resolved) and within_future_scope:
-        sorted_outages["scheduled"].append(outage)
+        sorted_outages['scheduled'].append(outage)
         self.hmdclog.log('debug', "Added outage to \"scheduled\" queue.")
 
       #
