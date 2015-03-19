@@ -148,7 +148,6 @@ class OSCalendarCache:
       feed = urllib2.urlopen(feed_url)
       with open(cache_file, "wb") as file:
         file.write(feed.read())
-      file.close()
       self.hmdclog.log('debug', "Successfully wrote: " + cache_file)
     #
     # There was an error connecting or download the feed, catch it here but
@@ -520,7 +519,6 @@ class OSCalendarCache:
     with open(output_file, 'w') as file:
       # The "pretty_print" parameter writes the XML in tree form.
       tree.write(file, pretty_print=True, xml_declaration=True)
-    file.close()
     self.hmdclog.log('debug', "")
     self.hmdclog.log('info', "Wrote " + output_file)
 
@@ -569,7 +567,6 @@ class OSCalendarCache:
     with open(output_file, 'w') as file:
       # The "pretty_print" argument writes the XML in tree form.
       tree.write(file, pretty_print=True, xml_declaration=True)
-    file.close()
     self.hmdclog.log('debug', "")
     self.hmdclog.log('info', "Wrote " + output_file)
 
@@ -599,7 +596,6 @@ class OSCalendarCache:
     if os.path.isfile(source):
       with open(source, "rb") as file:
         ical_feed = Calendar.from_ical(file.read())
-      file.close()
       self.hmdclog.log('debug', "Read in file: " + source)
     else:
       raise Exception("Calendar feed not found!")
