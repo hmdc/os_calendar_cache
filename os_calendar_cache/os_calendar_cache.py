@@ -203,7 +203,7 @@ class OSCalendarCache:
     for completed in sorted_outages['completed']:
       counter += 1
       self.hmdclog.log('debug', "")
-      self.hmdclog.log('info', "Begin creating output for completed outage #" + str(counter) + ".")
+      self.hmdclog.log('debug', "Begin creating output for completed outage #" + str(counter) + ".")
       #
       # Completed outages without a specific end time won't display
       # at all; see sort_outages() for more information.
@@ -244,7 +244,7 @@ class OSCalendarCache:
     for scheduled in sorted_outages['scheduled']:
       counter += 1
       self.hmdclog.log('debug', "")
-      self.hmdclog.log('info', "Begin creating output for scheduled outage #" + str(counter) + ".")
+      self.hmdclog.log('debug', "Begin creating output for scheduled outage #" + str(counter) + ".")
 
       start_time = self.format_date(scheduled['start_time'], 'start_time')
       title = scheduled['title']
@@ -284,7 +284,7 @@ class OSCalendarCache:
     for active in sorted_outages['active']:
       counter += 1
       self.hmdclog.log('debug', "")
-      self.hmdclog.log('info', "Begin creating output for active outage #" + str(counter) + ".")
+      self.hmdclog.log('debug', "Begin creating output for active outage #" + str(counter) + ".")
 
       # If end_time exists, add it to the output.
       if active['end_time'] != 0:
@@ -502,19 +502,22 @@ class OSCalendarCache:
       counter += 1
       self.hmdclog.log('debug', "Adding widget #" + str(counter) + ".")
 
-      widget = etree.SubElement(widgets, "widget")
+      widget = etree.SubElement(widgets, 'widget')
 
-      title = etree.SubElement(widget, "title")
-      title.text = outage["title"]
+      title = etree.SubElement(widget, 'title')
+      title.text = outage['title']
 
-      icon = etree.SubElement(widget, "icon")
-      icon.text = outage["icon"]
+      icon = etree.SubElement(widget, 'icon')
+      icon.text = outage['icon']
 
-      timeout = etree.SubElement(widget, "timeout")
-      timeout.text = str(outage["timeout"])
+      message = etree.SubElement(widget, 'message')
+      message.text = outage['message']
 
-      urgency = etree.SubElement(widget, "urgency")
-      urgency.text = outage["urgency"]
+      timeout = etree.SubElement(widget, 'timeout')
+      timeout.text = str(outage['timeout'])
+
+      urgency = etree.SubElement(widget, 'urgency')
+      urgency.text = outage['urgency']
 
     with open(output_file, 'w') as file:
       # The "pretty_print" parameter writes the XML in tree form.
@@ -544,25 +547,25 @@ class OSCalendarCache:
       counter += 1
       self.hmdclog.log('debug', "Creating subelements for outage #" + str(counter) + ".")
 
-      item = etree.SubElement(root, "item")
+      item = etree.SubElement(root, 'item')
 
-      title = etree.SubElement(item, "title")
-      title.text = outage["title"].encode("utf-8")
+      title = etree.SubElement(item, 'title')
+      title.text = outage['title'].encode('utf-8')
 
-      link = etree.SubElement(item, "link")
-      link.text = outage["link"].encode("utf-8")
+      link = etree.SubElement(item, 'link')
+      link.text = outage['link'].encode('utf-8')
 
-      resolved = etree.SubElement(item, "resolved")
-      resolved.text = str(outage["resolved"])
+      resolved = etree.SubElement(item, 'resolved')
+      resolved.text = str(outage['resolved'])
 
-      start_time = etree.SubElement(item, "start_time")
-      start_time.text = str(outage["start_time"])
+      start_time = etree.SubElement(item, 'start_time')
+      start_time.text = str(outage['start_time'])
 
-      end_time = etree.SubElement(item, "end_time")
-      end_time.text = str(outage["end_time"])
+      end_time = etree.SubElement(item, 'end_time')
+      end_time.text = str(outage['end_time'])
 
-      mod_time = etree.SubElement(item, "mod_time")
-      mod_time.text = str(outage["mod_time"])
+      mod_time = etree.SubElement(item, 'mod_time')
+      mod_time.text = str(outage['mod_time'])
 
     with open(output_file, 'w') as file:
       # The "pretty_print" argument writes the XML in tree form.
@@ -640,12 +643,12 @@ class OSCalendarCache:
           end_time = "0" * 10
           self.hmdclog.log('debug', "Found matching start and end time.")
 
-        outages.append({"end_time": end_time,
-                        "link": link,
-                        "mod_time": mod_time,
-                        "resolved": resolved,
-                        "start_time": start_time,
-                        "title": title})
+        outages.append({'end_time': end_time,
+                        'link': link,
+                        'mod_time': mod_time,
+                        'resolved': resolved,
+                        'start_time': start_time,
+                        'title': title})
 
     return outages
 
