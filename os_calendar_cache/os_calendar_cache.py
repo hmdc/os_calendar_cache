@@ -25,7 +25,7 @@ __email__ = "linux@lists.hmdc.harvard.edu"
 __status__ = "Production"
 
 
-class OSCalendarCache:
+class OSCalendarCache():
   """Module for caching and parsing OpenScholar calendar feeds.
 
   Example:
@@ -47,6 +47,7 @@ class OSCalendarCache:
     notifications_to_xml: Writes console and widget output to an XML file.
     outages_to_xml: Writes a set of data to a file in XML format.
     parse_ical: Searches the ICAL feed to parse events.
+    sanitize_text: Replaces non-alphanumeric characters with underscores.
     sort_outages: Sorts outages into one of three categories based on status.
     within_grace_period: Allows ICAL download to fail within a grace period.
 
@@ -343,6 +344,7 @@ class OSCalendarCache:
       directory (string): Location of the working directory.
       feed (object): File handler of the calendar feed.
       feed_updated (boolean): Whether the feed has been updated or not.
+      feed_url_safe (string): Filename safe url of the feed.
       parsed_file (string): Full path to the XML file of the parsed feed.
       outages (dictionary): Results from parsing the calendar feed.
       notifications_file (string): Full path to the notifications file.
@@ -355,16 +357,15 @@ class OSCalendarCache:
     # Set up file locations for sources and outputs.
     #
     directory = self.settings['working_directory']
-    cache_file = directory + "/ical-feed.ics"
+    feed_url_safe = self.sanitize_text("feed_url_safe", self.settings['feed_url'])
+    cache_file = directory + "/" + feed_url_safe + ".ics"
     notifications_file = directory + "/notifications.xml"
-    parsed_file = directory + "/ical-parsed.xml"
-    temp_file = directory + "/ical-parsed-temp.xml"
+    temp_file = directory + "/notifications-new.xml"
 
     self.hmdclog.log('debug', "Calendar feed: " + self.settings['feed_url'])
     self.hmdclog.log('debug', "Files:")
     self.hmdclog.log('debug', "\tCache: " + cache_file)
     self.hmdclog.log('debug', "\tTemp: " + temp_file)
-    self.hmdclog.log('debug', "\tParsed: " + parsed_file)
     self.hmdclog.log('debug', "\tNotifications: " + notifications_file)
 
     #
@@ -385,22 +386,20 @@ class OSCalendarCache:
       # XML file, which pulls out only the outage related information.
       #
       outages = self.parse_ical(cache_file)
-      self.outages_to_xml(outages, temp_file)
+      sorted_outages = self.sort_outages(outages)
+      notifications = self.create_notifications(sorted_outages)
+      self.notifications_to_xml(notifications, temp_file)
       #
       # If notifications have not been created previously, force an update;
-      # if a parsed XML file doesn't exist for any reason, force an update;
-      # otherwise compare the temp XML file to the previous parsed XML file to
+      # otherwise compare the temp XML file to the notifications XML file to
       # determine if there are any updates.
       #
       if not os.path.isfile(notifications_file):
         self.hmdclog.log('debug', "No notifications found; forcing update.")
         feed_updated = True
-      elif not os.path.isfile(parsed_file):
-        self.hmdclog.log('debug', "No previous parsed file to check against; forcing update.")
-        feed_updated = True
       else:
-        self.hmdclog.log('debug', "Comparing temp file and parsed file.")
-        feed_updated = not filecmp.cmp(temp_file, parsed_file)
+        self.hmdclog.log('debug', "Comparing temp file and notifications.")
+        feed_updated = not filecmp.cmp(temp_file, notifications_file)
     else:
       feed_updated = False
 
@@ -410,15 +409,8 @@ class OSCalendarCache:
     #
     if feed_updated:
       self.hmdclog.log('debug', "Updates to the outages feed were found.")
-      shutil.move(temp_file, parsed_file)
-      self.hmdclog.log('debug', "Temp file converted to new parsed file.")
-      #
-      # Sort and create widget and console notifications based on the parsed
-      # data from the calendar feed.
-      #
-      sorted_outages = self.sort_outages(outages)
-      notifications = self.create_notifications(sorted_outages)
-      self.notifications_to_xml(notifications, notifications_file)
+      shutil.move(temp_file, notifications_file)
+      self.hmdclog.log('debug', "Temp file converted to new notifications file.")
     else:
       self.hmdclog.log('info', "No updates were found.")
       if os.path.isfile(temp_file):
@@ -450,9 +442,9 @@ class OSCalendarCache:
     matched = bool(regex.search(description))
 
     if matched:
-      self.hmdclog.log('debug', "Resolved pattern found!")
+      self.hmdclog.log('debug', "Resolved pattern found.")
     else:
-      self.hmdclog.log('debug', "Resolved pattern not found!")
+      self.hmdclog.log('debug', "Resolved pattern not found.")
 
     return matched
 
@@ -610,7 +602,7 @@ class OSCalendarCache:
         self.hmdclog.log('debug', "Begin parsing entry #" + str(counter) + ".")
 
         desc = component.get("DESCRIPTION").encode('utf-8')
-        # self.hmdclog.log('debug', "Description:\n" + desc + "\n")
+        self.hmdclog.log('debug', "(Description parsed.)")
 
         end_time = component.get('DTEND').to_ical()
         end_time = self.iso_to_unixtime("Endtime", end_time)
@@ -627,11 +619,8 @@ class OSCalendarCache:
         start_time = component.get('DTSTART').to_ical()
         start_time = self.iso_to_unixtime("Starttime", start_time)
 
-        #
-        # Replace non-alphanumeric characters with underscores.
-        #
-        pattern = re.compile(r'[^\w\s]', re.MULTILINE)
-        title = re.sub(pattern, "_", component.get('SUMMARY').encode('utf-8'))
+        title = component.get('SUMMARY').encode('utf-8')
+        title = self.sanitize_text("title", title)
 
         self.hmdclog.log('debug', "Done parsing entry #" + str(counter) + ".")
 
@@ -651,6 +640,15 @@ class OSCalendarCache:
                         'title': title})
 
     return outages
+
+  def sanitize_text(self, name, text):
+    """Replaces non-alphanumeric characters with underscores."""
+
+    pattern = re.compile(r'[^\w\s]', re.MULTILINE)
+    subbed = re.sub(pattern, "_", str(text))
+    self.hmdclog.log('debug', "" + name + ": \"" + str(text) +
+                     "\" converted to " + "\"" + str(subbed) + "\"")
+    return subbed
 
   def sort_outages(self, outages):
     """Sorts outages into groups of "completed", "active", and "scheduled".
@@ -802,4 +800,5 @@ class OSCalendarCache:
       return False
 
 if __name__ == '__main__':
-  pass
+  cacher = OSCalendarCache("DEBUG", True, False)
+  cacher.get_updates()
