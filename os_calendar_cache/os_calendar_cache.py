@@ -212,7 +212,9 @@ class OSCalendarCache():
       title = completed['title']
       complete_text = title + " is now complete."
 
+			#
       # GUI output
+      #
       icon = self.settings['states']['completed']['icon']
       tooltip = complete_text + "\n" + gui_text
       timeout = self.settings['states']['completed']['timeout']
@@ -227,7 +229,9 @@ class OSCalendarCache():
       self.hmdclog.log('debug', "\tTimeout: " + str(timeout))
       self.hmdclog.log('debug', "\tUrgency: " + str(urgency))
 
+			#
       # Console output
+      #
       link = colored(completed['link'], link_color)
       text = colored(complete_text, 'yellow', attrs=['bold'])
       tooltip = text + "\n" + cli_text + "\n\t" + link + "\n"
@@ -251,7 +255,9 @@ class OSCalendarCache():
       title = scheduled['title']
       scheduled_text = title + " is scheduled to start on " + start_time
 
+			#
       # GUI output
+      #
       icon = self.settings['states']['scheduled']['icon']
       tooltip = scheduled_text + "\n" + scheduled['link'] + "\n" + gui_text
       timeout = self.settings['states']['scheduled']['timeout']
@@ -266,7 +272,9 @@ class OSCalendarCache():
       self.hmdclog.log('debug', "\tTimeout: " + str(timeout))
       self.hmdclog.log('debug', "\tUrgency: " + str(urgency))
 
+			#
       # Console output
+      #
       link = colored(scheduled['link'], link_color)
       text = colored(scheduled['title'], attrs=['bold']) + \
         " is scheduled to start on " + colored(start_time, 'green') + "."
@@ -296,7 +304,9 @@ class OSCalendarCache():
       title = active['title']
       active_text = title + " is in progress" + end_time
 
+			#
       # GUI output
+      #
       icon = self.settings['states']['active']['icon']
       timeout = self.settings['states']['active']['timeout']
       urgency = self.settings['states']['active']['urgency']
@@ -311,7 +321,9 @@ class OSCalendarCache():
       self.hmdclog.log('debug', "\tTimeout: " + str(timeout))
       self.hmdclog.log('debug', "\tUrgency: " + str(urgency))
 
+			#
       # Console output
+      #
       link = colored(active['link'], link_color)
       text = colored(active['title'], attrs=['bold']) + \
         colored(" is in progress" + end_time + ".", 'red', attrs=['bold'])
@@ -335,11 +347,11 @@ class OSCalendarCache():
     return timestamp
 
   def get_updates(self):
-    """Detect updates by parsing a cached calendar feed to a temp_file file and
-    comparing that to the existing parsed XML feed.
+    """Detect updates by parsing a cached calendar feed to a temp file and
+    comparing that to the existing notifications feed.
 
     Attributes:
-      cache_file (string): Full path to the cache_file file.
+      cache_file (string): Full path to the cache file.
       cached (boolean): If caching calendar feed succeeded or not.
       directory (string): Location of the working directory.
       feed (object): File handler of the calendar feed.
@@ -381,9 +393,8 @@ class OSCalendarCache():
     cached = self.cache_feed(cache_file, self.settings['feed_url'], within_grace_period)
 
     if cached:
-      #
-      # If caching was successful, parse the cache file into a new temporary
-      # XML file, which pulls out only the outage related information.
+    	#
+      # Parse the cache file into outages, then notifications.
       #
       outages = self.parse_ical(cache_file)
       sorted_outages = self.sort_outages(outages)
@@ -391,8 +402,8 @@ class OSCalendarCache():
       self.notifications_to_xml(notifications, temp_file)
       #
       # If notifications have not been created previously, force an update;
-      # otherwise compare the temp XML file to the notifications XML file to
-      # determine if there are any updates.
+      # otherwise compare the new temp XML file to the notifications XML file
+      # to determine if there are any updates (or changes).
       #
       if not os.path.isfile(notifications_file):
         self.hmdclog.log('debug', "No notifications found; forcing update.")
@@ -404,7 +415,7 @@ class OSCalendarCache():
       feed_updated = False
 
     #
-    # If updates were found, make the temp file the new parsed file.
+    # If updates were found, make the temp file the new notifications file.
     # Otherwise, delete the temp file.
     #
     if feed_updated:
@@ -626,7 +637,7 @@ class OSCalendarCache():
 
         #
         # If there's no end time defined, ICAL sets it to be equal to
-        # the start time, which we don't want - so zero it out.
+        # the start time, which we don't want -- so zero it out.
         #
         if end_time == start_time:
           end_time = "0" * 10
