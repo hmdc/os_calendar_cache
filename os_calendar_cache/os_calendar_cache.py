@@ -212,7 +212,7 @@ class OSCalendarCache():
       title = completed['title']
       complete_text = title + " is now complete."
 
-			#
+      #
       # GUI output
       #
       icon = self.settings['states']['completed']['icon']
@@ -229,7 +229,7 @@ class OSCalendarCache():
       self.hmdclog.log('debug', "\tTimeout: " + str(timeout))
       self.hmdclog.log('debug', "\tUrgency: " + str(urgency))
 
-			#
+      #
       # Console output
       #
       link = colored(completed['link'], link_color)
@@ -255,7 +255,7 @@ class OSCalendarCache():
       title = scheduled['title']
       scheduled_text = title + " is scheduled to start on " + start_time
 
-			#
+      #
       # GUI output
       #
       icon = self.settings['states']['scheduled']['icon']
@@ -272,7 +272,7 @@ class OSCalendarCache():
       self.hmdclog.log('debug', "\tTimeout: " + str(timeout))
       self.hmdclog.log('debug', "\tUrgency: " + str(urgency))
 
-			#
+      #
       # Console output
       #
       link = colored(scheduled['link'], link_color)
@@ -304,7 +304,7 @@ class OSCalendarCache():
       title = active['title']
       active_text = title + " is in progress" + end_time
 
-			#
+      #
       # GUI output
       #
       icon = self.settings['states']['active']['icon']
@@ -321,7 +321,7 @@ class OSCalendarCache():
       self.hmdclog.log('debug', "\tTimeout: " + str(timeout))
       self.hmdclog.log('debug', "\tUrgency: " + str(urgency))
 
-			#
+      #
       # Console output
       #
       link = colored(active['link'], link_color)
@@ -393,7 +393,7 @@ class OSCalendarCache():
     cached = self.cache_feed(cache_file, self.settings['feed_url'], within_grace_period)
 
     if cached:
-    	#
+      #
       # Parse the cache file into outages, then notifications.
       #
       outages = self.parse_ical(cache_file)
